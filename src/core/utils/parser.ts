@@ -8,7 +8,7 @@ import {
   kSizePacketLenMin,
   kMCSVersion,
   MCSProtoTag,
-} from './constants.js';
+} from './constants';
 
 const DEBUG_ENABLED = false;
 const DEBUG = DEBUG_ENABLED ? console.log : (log: string): void => {};

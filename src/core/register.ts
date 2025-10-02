@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { registerGCM, type GCMRegistrationResult } from './gcm/index.js';
-import { registerFCM, type FCMRegistrationResult } from './fcm/index.js';
+import { registerGCM, type GCMRegistrationResult } from './gcm';
+import { registerFCM, type FCMRegistrationResult } from './fcm';
 
 export interface RegisterCredentials extends FCMRegistrationResult {
   gcm: GCMRegistrationResult;

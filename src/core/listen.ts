@@ -1,6 +1,6 @@
-import { EVENTS } from './events.d.js';
-import { Client } from './client.js';
-import type { Credentials } from './client.js';
+import { EVENTS } from './events';
+import { Client } from './client';
+import type { Credentials } from './client';
 
 export interface Notification {
   title: string;

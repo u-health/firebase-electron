@@ -1,8 +1,8 @@
 import { ipcMain, type WebContents } from 'electron';
-import ElectronStore from 'electron-config';
+import ElectronStore from 'electron-store';
 
-import { listen } from '../core/listen.js';
-import { register, type FirebaseCredentials } from '../core/register.js';
+import { listen } from '../core/listen';
+import { register, type FirebaseCredentials } from '../core/register';
 
 import {
   NOTIFICATION_RECEIVED,
@@ -10,7 +10,7 @@ import {
   NOTIFICATION_SERVICE_STARTED,
   START_NOTIFICATION_SERVICE,
   TOKEN_UPDATED,
-} from './consts.js';
+} from './consts';
 
 const config = new ElectronStore();
 

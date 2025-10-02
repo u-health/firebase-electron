@@ -5,11 +5,11 @@ import tls from 'tls';
 import net from 'net';
 import protobuf from 'protobufjs';
 
-import { EVENTS } from './events.d.js';
-import { checkIn, type CheckInOptions } from './gcm/index.js';
-import { decrypt } from './utils/decrypt.js';
-import { kMCSVersion, MCSProtoTag } from './utils/constants.js';
-import Parser from './utils/parser.js';
+import { EVENTS } from './events';
+import { checkIn, type CheckInOptions } from './gcm';
+import { decrypt } from './utils/decrypt';
+import { kMCSVersion, MCSProtoTag } from './utils/constants';
+import Parser from './utils/parser';
 
 const HOST = 'mtalk.google.com';
 const PORT = 5228;

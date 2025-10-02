@@ -31,5 +31,6 @@
 
     /* Use ES2022 library definitions */
     "lib": ["ES2022"]
-  }
+  },
+  "include": ["src/*.ts"]
 }

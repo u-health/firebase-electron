@@ -3,9 +3,9 @@ import path from 'path';
 import protobuf from 'protobufjs';
 import request from 'request-promise';
 
-import fcmKey from '../fcm/server-key.js';
-import { toBase64 } from '../utils/base64.js';
-import { waitFor } from '../utils/timeout.js';
+import fcmKey from '../fcm/server-key';
+import { toBase64 } from '../utils/base64';
+import { waitFor } from '../utils/timeout';
 
 // Hack to fix PHONE_REGISTRATION_ERROR #17 when bundled with webpack
 // https://github.com/dcodeIO/protobuf.js#browserify-integration

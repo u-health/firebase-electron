@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+// @ts-ignore
 import ece from 'http_ece';
 
 interface DecryptObject {

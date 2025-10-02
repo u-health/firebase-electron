@@ -1,5 +1,5 @@
 import request from 'request-promise';
-import { waitFor } from './timeout.js';
+import { waitFor } from './timeout';
 
 // In seconds
 const MAX_RETRY_TIMEOUT = 15;

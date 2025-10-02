@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import request from 'request-promise';
 
-import { escape } from '../utils/base64.js';
-import { type FirebaseCredentials } from '../register.js';
+import { escape } from '../utils/base64';
+import { type FirebaseCredentials } from '../register';
 
 const FCM_ENDPOINT = 'https://fcm.googleapis.com/fcm/send';
 const FCM_REGISTRATION_ENDPOINT = 'https://fcmregistrations.googleapis.com/v1';
