@@ -43,13 +43,16 @@ async function receive(n: number) {
 
 describe('listen function', () => {
   beforeEach(async () => {
-    credentials = await register({
-      // values irrelevant; register() is mocked
-      apiKey: 'fake',
-      appId: 'fake',
-      projectId: 'fake',
-      vapidKey: 'fake',
-    } as any);
+    credentials = await register(
+      {
+        // values irrelevant; register() is mocked
+        apiKey: 'fake',
+        appId: 'fake',
+        projectId: 'fake',
+        vapidKey: 'fake',
+      } as any,
+      'test',
+    );
 
     const receivedNotifications: Notification[] = [];
     const onNotification = ({ notification }: NotificationCallbackParams) => {

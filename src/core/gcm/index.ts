@@ -111,6 +111,8 @@ async function postRegister({ androidId, securityToken, body, retry = 0 }: PostR
     return postRegister({ androidId, securityToken, body, retry: retry + 1 });
   }
 
+  console.log('GCM register success:', response);
+
   return response;
 }
 

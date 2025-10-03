@@ -18,12 +18,15 @@ import { register, type RegisterCredentials } from './core/register';
 
 describe('register function (mocked)', () => {
   it('should return credentials (with vapid key)', async () => {
-    const credentials: RegisterCredentials = await register({
-      apiKey: 'fake',
-      appId: 'fake',
-      projectId: 'fake',
-      vapidKey: 'fake',
-    } as any);
+    const credentials: RegisterCredentials = await register(
+      {
+        apiKey: 'fake',
+        appId: 'fake',
+        projectId: 'fake',
+        vapidKey: 'fake',
+      } as any,
+      'test',
+    );
 
     expect(credentials).toBeDefined();
     console.log(credentials);
@@ -31,11 +34,14 @@ describe('register function (mocked)', () => {
   });
 
   it('should return credentials (without vapid key)', async () => {
-    const credentials: RegisterCredentials = await register({
-      apiKey: 'fake',
-      appId: 'fake',
-      projectId: 'fake',
-    } as any);
+    const credentials: RegisterCredentials = await register(
+      {
+        apiKey: 'fake',
+        appId: 'fake',
+        projectId: 'fake',
+      } as any,
+      'test',
+    );
 
     expect(credentials).toBeDefined();
     expect(credentials.gcm.androidId).toBe('1234567890');

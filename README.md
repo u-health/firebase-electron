@@ -15,7 +15,7 @@ Usage is similar to the [`electron-push-receiver`](https://github.com/MatthieuLe
 ### In the main process (`main.js/.ts`)
 
 ```typescript
-import { setup: setupPushReceiver } from 'firebase-electron';
+import { setup as setupPushReceiver } from 'firebase-electron';
 
 // Call it before 'did-finish-load' with mainWindow a reference to your window
 setupPushReceiver(mainWindow.webContents);
@@ -30,30 +30,54 @@ import {
   NOTIFICATION_SERVICE_STARTED,
   NOTIFICATION_SERVICE_ERROR,
   NOTIFICATION_RECEIVED,
+  STOP_NOTIFICATION_SERVICE,
   TOKEN_UPDATED,
+  createEventName,
 } from 'firebase-electron/dist/electron/consts';
 
+const namespace = 'main-window'; // Use '' for the default namespace
+
 // Listen for service successfully started
-ipcRenderer.on(NOTIFICATION_SERVICE_STARTED, (_, token) => {
+ipcRenderer.on(createEventName(namespace, NOTIFICATION_SERVICE_STARTED), (_, token) => {
   // do something
 });
 // Handle notification errors
-ipcRenderer.on(NOTIFICATION_SERVICE_ERROR, (_, error) => {
+ipcRenderer.on(createEventName(namespace, NOTIFICATION_SERVICE_ERROR), (_, error) => {
   // do something
 });
 // Send FCM token to backend
-ipcRenderer.on(TOKEN_UPDATED, (_, token) => {
+ipcRenderer.on(createEventName(namespace, TOKEN_UPDATED), (_, token) => {
   // Send token
 });
 // Display notification
-ipcRenderer.on(NOTIFICATION_RECEIVED, (_, notification) => {
+ipcRenderer.on(createEventName(namespace, NOTIFICATION_RECEIVED), (_, notification) => {
   // display notification
 });
+
 // Start service
-ipcRenderer.send(START_NOTIFICATION_SERVICE, { appId, apiKey, projectId, vapidKey });
+ipcRenderer.send(START_NOTIFICATION_SERVICE, {
+  namespace,
+  credentials: { appId, apiKey, projectId, vapidKey },
+});
 // or
-window.ipc.send(START_NOTIFICATION_SERVICE, { appId, apiKey, projectId, vapidKey });
+window.ipc.send(START_NOTIFICATION_SERVICE, {
+  namespace,
+  credentials: { appId, apiKey, projectId, vapidKey },
+});
+
+// Optionally namespace events (e.g. when using multiple renderer contexts)
+const settingsNamespace = 'settings';
+ipcRenderer.send(START_NOTIFICATION_SERVICE, {
+  namespace: settingsNamespace,
+  credentials: { appId, apiKey, projectId, vapidKey },
+});
+ipcRenderer.on(createEventName(settingsNamespace, NOTIFICATION_RECEIVED), (_, notification) => {
+  // handle notification scoped to this namespace
+});
+ipcRenderer.send(STOP_NOTIFICATION_SERVICE, { namespace: settingsNamespace });
 ```
+
+All renderer-side events are emitted with the namespace-aware helpers above. `createEventName(namespace, baseEvent)` mirrors the namespacing used on the main process and ensures each renderer context listens on the correct channel.
 
 ### Where to find `appId`, `apiKey`, `projectId` and `vapidKey`
 

@@ -29,6 +29,7 @@
   "license": "MIT",
   "scripts": {
     "build": "rimraf dist && tsup && node afterBuild.js",
+    "prepare": "npm run build",
     "ci": "npm run build && node afterBuild.js && npm run lint:fix && npm run test",
     "dev": "tsc --watch",
     "lint:fix": "tsc && prettier --write .",
