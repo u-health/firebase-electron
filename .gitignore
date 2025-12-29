@@ -7,3 +7,4 @@ dist
 
 # VS Code IDE cache files
 .vscode/
+.DS_Store

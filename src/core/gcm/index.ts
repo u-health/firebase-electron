@@ -1,10 +1,10 @@
 import Long from 'long';
 import path from 'path';
 import protobuf from 'protobufjs';
-import request from 'request-promise';
 
 import fcmKey from '../fcm/server-key';
 import { toBase64 } from '../utils/base64';
+import { requestWithRetry } from '../utils/request';
 import { waitFor } from '../utils/timeout';
 
 // Hack to fix PHONE_REGISTRATION_ERROR #17 when bundled with webpack
@@ -42,7 +42,7 @@ export async function checkIn(androidId?: string, securityToken?: string): Promi
 
   const buffer = getCheckinRequest(androidId, securityToken);
 
-  const body = await request({
+  const body = await requestWithRetry({
     url: CHECKIN_URL,
     method: 'POST',
     headers: {
@@ -90,7 +90,7 @@ interface PostRegisterOptions {
 }
 
 async function postRegister({ androidId, securityToken, body, retry = 0 }: PostRegisterOptions): Promise<string> {
-  const response = await request({
+  const response = await requestWithRetry({
     url: REGISTER_URL,
     method: 'POST',
     headers: {

@@ -1,8 +1,8 @@
 import crypto from 'crypto';
-import request from 'request-promise';
 
 import { escape } from '../utils/base64';
 import { type FirebaseCredentials } from '../register';
+import { requestWithRetry } from '../utils/request';
 
 const FCM_ENDPOINT = 'https://fcm.googleapis.com/fcm/send';
 const FCM_REGISTRATION_ENDPOINT = 'https://fcmregistrations.googleapis.com/v1';
@@ -59,7 +59,7 @@ async function registerRequest(
   gcmToken: string,
   keys: { authSecret: string; publicKey: string },
 ): Promise<string> {
-  const response = await request({
+  const response = await requestWithRetry({
     url: `${FCM_REGISTRATION_ENDPOINT}/projects/${credentials.projectId}/registrations`,
     method: 'POST',
     headers: {
@@ -90,7 +90,7 @@ async function registerRequest(
 async function installRequest(): Promise<string> {
   const fid = await generateFirebaseFID();
 
-  const response = await request({
+  const response = await requestWithRetry({
     url: `${FCM_INSTALLATION_ENDPOINT}/projects/${credentials.projectId}/installations`,
     method: 'POST',
     headers: {
