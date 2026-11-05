@@ -26,14 +26,16 @@ export async function listen(
   // Listen for notifications
   client.on(EVENTS.ON_NOTIFICATION_RECEIVED, notificationCallback);
 
-  // Connect to the mtalk.google.com server
-  await client.connect();
-
-  // Emit client connected event
-  client.emit(EVENTS.ON_CLIENT_CONNECTED);
-
-  // Return the client object
-  return client;
+  try {
+    // Connect to the mtalk.google.com server
+    await client.connect();
+    client.emit(EVENTS.ON_CLIENT_CONNECTED);
+    return client;
+  } catch (error) {
+    // Startup can fail after opening a socket (for example, while loading the parser).
+    client.destroy();
+    throw error;
+  }
 }
 
 export { Client };

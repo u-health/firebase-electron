@@ -27,7 +27,8 @@ async function retry(attempt: number, ...args: RequestArgs): Promise<any> {
 
     const timeout = Math.min((attempt - 1) * RETRY_STEP, MAX_RETRY_TIMEOUT);
 
-    console.error(`Request failed : ${(e as Error).message}`);
+    // HTTP errors may contain registration URLs, tokens, or request credentials.
+    console.error('Push service request failed');
     console.error(`Retrying in ${timeout} seconds`);
 
     await waitFor(timeout * 1000);

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { escape } from '../utils/base64';
 import { type FirebaseCredentials } from '../register';
 import { requestWithRetry } from '../utils/request';
+import { DEFAULT_VAPID_KEY } from './server-key';
 
 const FCM_ENDPOINT = 'https://fcm.googleapis.com/fcm/send';
 const FCM_REGISTRATION_ENDPOINT = 'https://fcmregistrations.googleapis.com/v1';
@@ -19,16 +20,10 @@ export interface FCMRegistrationResult {
   };
 }
 
-let credentials: FirebaseCredentials;
-
-export async function registerFCM(
-  gcmToken: string,
-  firebaseCredentials: FirebaseCredentials,
-): Promise<FCMRegistrationResult> {
-  credentials = firebaseCredentials;
+export async function registerFCM(gcmToken: string, credentials: FirebaseCredentials): Promise<FCMRegistrationResult> {
   const keys = await createKeys();
-  const installationAuthToken = await installRequest();
-  const fcmToken = await registerRequest(installationAuthToken, gcmToken, keys);
+  const installationAuthToken = await installRequest(credentials);
+  const fcmToken = await registerRequest(credentials, installationAuthToken, gcmToken, keys);
 
   return {
     keys,
@@ -55,6 +50,7 @@ async function createKeys(): Promise<{
 }
 
 async function registerRequest(
+  credentials: FirebaseCredentials,
   installationAuthToken: string,
   gcmToken: string,
   keys: { authSecret: string; publicKey: string },
@@ -69,7 +65,9 @@ async function registerRequest(
     },
     body: JSON.stringify({
       web: {
-        applicationPubKey: credentials.vapidKey || '',
+        ...(credentials.vapidKey && credentials.vapidKey !== DEFAULT_VAPID_KEY
+          ? { applicationPubKey: credentials.vapidKey }
+          : {}),
         auth: keys.authSecret.replace(/=/g, '').replace(/\+/g, '').replace(/\//g, ''),
         endpoint: `${FCM_ENDPOINT}/${gcmToken}`,
         p256dh: keys.publicKey.replace(/=/g, '').replace(/\+/g, '').replace(/\//g, ''),
@@ -87,7 +85,7 @@ async function registerRequest(
   return parsedResponse.token;
 }
 
-async function installRequest(): Promise<string> {
+async function installRequest(credentials: FirebaseCredentials): Promise<string> {
   const fid = await generateFirebaseFID();
 
   const response = await requestWithRetry({

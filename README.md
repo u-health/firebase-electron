@@ -32,22 +32,30 @@ import {
   NOTIFICATION_RECEIVED,
   STOP_NOTIFICATION_SERVICE,
   TOKEN_UPDATED,
+  TOKEN_REGISTERED,
   createEventName,
 } from 'firebase-electron/dist/electron/consts';
 
-const namespace = 'main-window'; // Use '' for the default namespace
+const namespace = 'main-window'; // Required, stable per signed-in user in this installation
 
-// Listen for service successfully started
-ipcRenderer.on(createEventName(namespace, NOTIFICATION_SERVICE_STARTED), (_, token) => {
-  // do something
-});
+// Both events provide (event, token, supersededTokens). Deduplicate identical saves.
+// These application functions must save the new token first, then delete only the
+// supplied superseded tokens from this user's registrations. Never delete other devices.
+const saveRegistration = async (_, token, supersededTokens: string[] = []) => {
+  try {
+    await saveTokenToBackend(token);
+    await removeSupersededTokensFromBackend(supersededTokens.filter((previous) => previous !== token));
+    ipcRenderer.send(TOKEN_REGISTERED, { namespace, token });
+  } catch {
+    // Retry persistence in your app. Do not acknowledge a failed save or cleanup.
+    console.warn('Unable to save push registration');
+  }
+};
+ipcRenderer.on(createEventName(namespace, NOTIFICATION_SERVICE_STARTED), saveRegistration);
+ipcRenderer.on(createEventName(namespace, TOKEN_UPDATED), saveRegistration);
 // Handle notification errors
 ipcRenderer.on(createEventName(namespace, NOTIFICATION_SERVICE_ERROR), (_, error) => {
   // do something
-});
-// Send FCM token to backend
-ipcRenderer.on(createEventName(namespace, TOKEN_UPDATED), (_, token) => {
-  // Send token
 });
 // Display notification
 ipcRenderer.on(createEventName(namespace, NOTIFICATION_RECEIVED), (_, notification) => {
@@ -79,6 +87,26 @@ ipcRenderer.send(STOP_NOTIFICATION_SERVICE, { namespace: settingsNamespace });
 
 All renderer-side events are emitted with the namespace-aware helpers above. `createEventName(namespace, baseEvent)` mirrors the namespacing used on the main process and ensures each renderer context listens on the correct channel.
 
+### Registration migration and cleanup
+
+The receiver replaces registrations cached by older versions once because their endpoint could
+be bound to a different VAPID key. Subsequent starts reuse the corrected registration.
+
+`TOKEN_UPDATED` and `NOTIFICATION_SERVICE_STARTED` keep the token as their first payload argument,
+and add a `supersededTokens: string[]` argument. These are only registrations previously cached
+under this namespace and Firebase project on this installation, not a list of the user's other devices.
+The receiver persists and replays them across restarts until the renderer sends `TOKEN_REGISTERED`
+with the current `{ namespace, token }` after a successful backend save and cleanup.
+Consumers that ignore the extra argument still receive the new token, but must implement this
+acknowledgement flow to retire their old backend registrations.
+
+Changing Firebase projects never retires registrations in the new project's database using
+IDs from the old project. Stopping a service or destroying its window cancels pending startup.
+
+The namespace is the app's stable cache and event-routing identity. Each new Google endpoint
+gets its own random provider scope, saved with its credentials and reused on reconnect.
+Do not use a shared doctor/user ID as the provider subscription scope across installations.
+
 ### Where to find `appId`, `apiKey`, `projectId` and `vapidKey`
 
 1. Go to [Firebase Console](https://console.firebase.google.com/) & login to your account
@@ -94,6 +122,11 @@ All renderer-side events are emitted with the namespace-aware helpers above. `cr
 8. Copy the `appId`, `apiKey`, `projectId` listed under the `SDK setup and configuration` section
 9. (Optional) Copy the `vapidKey` listed under the `Cloud Messaging` tab and `Web Configuration > Web Push certificates` section
 10. (Optional) Generate a new `key pair` and use the value in the `Key pair` column as your `vapidKey`
+
+Use the existing public key for the selected Firebase project; do not rotate it to repair a
+cached registration. The receiver uses that key for both endpoint creation and FCM registration.
+If omitted, it follows the Firebase JS SDK default-key protocol, including omitting
+`web.applicationPubKey`. No private VAPID key belongs in your Electron app.
 
 ## Moving from `electron-push-receiver`
 

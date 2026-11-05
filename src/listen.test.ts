@@ -1,74 +1,45 @@
-// src/listen.test.ts
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { listen } from './core/listen';
+import { EVENTS } from './core/events';
 
-// Block network by mocking the high-level calls used here
-vi.mock('./core/register', () => ({
-  register: vi.fn(async () => ({
-    token: 'test-token',
-    androidId: '1234567890',
-    securityToken: 'sec-token',
-    persistentIds: [],
-  })),
-}));
+const mocks = vi.hoisted(() => ({ connect: vi.fn(), destroy: vi.fn() }));
+vi.mock('./core/client', async () => {
+  const { EventEmitter } = await import('events');
+  return {
+    Client: class extends EventEmitter {
+      connect = mocks.connect;
+      destroy = mocks.destroy;
+    },
+  };
+});
 
-vi.mock('./core/listen', () => ({
-  listen: vi.fn(async (_creds: any, _onNotification: any) => {
-    // Minimal Client shape used by the test
-    return {
-      checkConnection: () => true,
-      destroy: async () => undefined,
-    } as any;
-  }),
-}));
+const credentials = {
+  gcm: { androidId: '123', securityToken: '456' },
+  keys: { privateKey: 'private', authSecret: 'auth' },
+  persistentIds: [],
+};
 
-import { listen, type Client, type Notification, type NotificationCallbackParams } from './core/listen';
-import { register, type RegisterCredentials } from './core/register';
+beforeEach(() => {
+  mocks.connect.mockReset().mockResolvedValue(undefined);
+  mocks.destroy.mockReset();
+});
 
-let credentials: RegisterCredentials | undefined;
-let client: Client | undefined;
-
-async function receive(n: number) {
-  const receivedNotifications: Notification[] = [];
-
-  return new Promise(async (resolve) => {
-    const onNotification = ({ notification }: NotificationCallbackParams) => {
-      receivedNotifications.push(notification);
-      if (receivedNotifications.length === n) resolve(receivedNotifications);
+describe('notification listener startup', () => {
+  it('delivers received notifications to the application', async () => {
+    const receive = vi.fn();
+    const client = await listen(credentials, receive);
+    const message = {
+      notification: { title: 'Test', body: 'Test push', data: {} },
+      persistentId: 'test-message',
     };
-
-    credentials!.persistentIds = [];
-    client = await listen({ ...credentials!, persistentIds: [] }, onNotification);
-  });
-}
-
-describe('listen function', () => {
-  beforeEach(async () => {
-    credentials = await register(
-      {
-        // values irrelevant; register() is mocked
-        apiKey: 'fake',
-        appId: 'fake',
-        projectId: 'fake',
-        vapidKey: 'fake',
-      } as any,
-      'test',
-    );
-
-    const receivedNotifications: Notification[] = [];
-    const onNotification = ({ notification }: NotificationCallbackParams) => {
-      receivedNotifications.push(notification);
-    };
-
-    client = await listen({ ...credentials!, persistentIds: [] }, onNotification);
+    client.emit(EVENTS.ON_NOTIFICATION_RECEIVED, message);
+    expect(receive).toHaveBeenCalledWith(message);
   });
 
-  afterEach(async () => {
-    if (client) await client.destroy();
-    credentials = undefined;
-    vi.clearAllMocks();
-  });
-
-  it('should start listening to notifications', async () => {
-    expect(client!.checkConnection()).toBe(true);
+  it('closes a partially connected receiver if startup fails', async () => {
+    const failure = new Error('Parser startup failed');
+    mocks.connect.mockRejectedValueOnce(failure);
+    await expect(listen(credentials, vi.fn())).rejects.toBe(failure);
+    expect(mocks.destroy).toHaveBeenCalledOnce();
   });
 });

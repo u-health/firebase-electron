@@ -2,8 +2,7 @@ import Long from 'long';
 import path from 'path';
 import protobuf from 'protobufjs';
 
-import fcmKey from '../fcm/server-key';
-import { toBase64 } from '../utils/base64';
+import { DEFAULT_VAPID_KEY } from '../fcm/server-key';
 import { requestWithRetry } from '../utils/request';
 import { waitFor } from '../utils/timeout';
 
@@ -11,8 +10,6 @@ import { waitFor } from '../utils/timeout';
 // https://github.com/dcodeIO/protobuf.js#browserify-integration
 protobuf.util.Long = Long;
 protobuf.configure();
-
-const serverKey = toBase64(Buffer.from(fcmKey));
 
 const REGISTER_URL = 'https://android.clients.google.com/c2dm/register3';
 const CHECKIN_URL = 'https://android.clients.google.com/checkin';
@@ -30,9 +27,9 @@ export interface GCMRegistrationResult extends CheckInOptions {
   appId: string;
 }
 
-export async function registerGCM(appId: string): Promise<GCMRegistrationResult> {
+export async function registerGCM(appId: string, vapidKey = DEFAULT_VAPID_KEY): Promise<GCMRegistrationResult> {
   const options = await checkIn();
-  const credentials = await doRegister(options, appId);
+  const credentials = await doRegister(options, appId, vapidKey);
 
   return credentials;
 }
@@ -63,12 +60,16 @@ export async function checkIn(androidId?: string, securityToken?: string): Promi
   return object;
 }
 
-async function doRegister({ androidId, securityToken }: CheckInOptions, appId: string): Promise<GCMRegistrationResult> {
+async function doRegister(
+  { androidId, securityToken }: CheckInOptions,
+  appId: string,
+  vapidKey: string,
+): Promise<GCMRegistrationResult> {
   const body = {
     app: 'org.chromium.linux',
     'X-subtype': appId,
     device: androidId,
-    sender: serverKey,
+    sender: vapidKey,
   };
 
   const response = await postRegister({ androidId, securityToken, body });
@@ -111,7 +112,7 @@ async function postRegister({ androidId, securityToken, body, retry = 0 }: PostR
     return postRegister({ androidId, securityToken, body, retry: retry + 1 });
   }
 
-  console.log('GCM register success:', response);
+  console.log('GCM registration succeeded');
 
   return response;
 }

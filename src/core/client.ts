@@ -6,7 +6,6 @@ import net from 'net';
 import protobuf from 'protobufjs';
 
 import { EVENTS } from './events';
-import { checkIn, type CheckInOptions } from './gcm';
 import { decrypt } from './utils/decrypt';
 import { kMCSVersion, MCSProtoTag } from './utils/constants';
 import Parser from './utils/parser';
@@ -71,7 +70,8 @@ export class Client extends EventEmitter {
 
   async connect(): Promise<void> {
     await Client.init();
-    await this._checkIn();
+    // Registration already checked in this emulated Chromium device. Repeating it
+    // on connection/reconnection can invalidate its existing push subscriptions.
     this._connect();
     // can happen if the socket immediately closes after being created
     if (!this._socket) {
@@ -95,10 +95,6 @@ export class Client extends EventEmitter {
     if (!this._socket) return false;
 
     return !this._socket.destroyed && this._socket.writable;
-  }
-
-  private async _checkIn(): Promise<CheckInOptions> {
-    return checkIn(this._credentials.gcm.androidId, this._credentials.gcm.securityToken);
   }
 
   private _connect(): void {

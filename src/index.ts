@@ -8,5 +8,6 @@ export {
   NOTIFICATION_RECEIVED,
   STOP_NOTIFICATION_SERVICE,
   TOKEN_UPDATED,
+  TOKEN_REGISTERED,
   createEventName,
 } from './electron/consts';
