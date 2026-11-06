@@ -21,7 +21,7 @@ beforeEach(async () => {
   const checkin = Buffer.from(
     response.encode(response.fromObject({ androidId: '123', securityToken: '456' })).finish(),
   );
-  vi.mocked(requestWithRetry).mockImplementation(async (options: any) => {
+  vi.mocked(requestWithRetry).mockImplementation(async (_operation, options: any) => {
     if (options.url.endsWith('/checkin')) return checkin;
     if (options.url.endsWith('/register3')) return 'token=test-endpoint';
     if (options.url.endsWith('/installations')) return JSON.stringify({ authToken: { token: 'test-installation' } });
@@ -33,7 +33,7 @@ describe('push registration requests', () => {
   it('binds the push endpoint and FCM registration to the same custom VAPID key', async () => {
     const vapidKey = Buffer.alloc(65, 4).toString('base64url');
     const result = await register({ ...firebaseCredentials, vapidKey }, 'test');
-    const requests = vi.mocked(requestWithRetry).mock.calls.map(([options]) => options as any);
+    const requests = vi.mocked(requestWithRetry).mock.calls.map(([, options]) => options as any);
     const endpoint = requests.find((options) => options.url.endsWith('/register3'));
     const fcm = requests.find((options) => options.url.endsWith('/registrations'));
     const web = JSON.parse(fcm.body).web;
@@ -50,7 +50,7 @@ describe('push registration requests', () => {
     'uses the Firebase default subscription protocol when vapidKey is %s',
     async (vapidKey) => {
       await register({ ...firebaseCredentials, vapidKey }, 'test');
-      const requests = vi.mocked(requestWithRetry).mock.calls.map(([options]) => options as any);
+      const requests = vi.mocked(requestWithRetry).mock.calls.map(([, options]) => options as any);
       expect(requests.find((options) => options.url.endsWith('/register3')).form.sender).toBe(DEFAULT_VAPID_KEY);
       const fcm = requests.find((options) => options.url.endsWith('/registrations'));
       expect(JSON.parse(fcm.body).web).not.toHaveProperty('applicationPubKey');
@@ -62,7 +62,7 @@ describe('push registration requests', () => {
     await register(firebaseCredentials, 'same-user');
     const scopes = vi
       .mocked(requestWithRetry)
-      .mock.calls.map(([options]) => options as any)
+      .mock.calls.map(([, options]) => options as any)
       .filter((options) => options.url.endsWith('/register3'))
       .map((options) => options.form['X-subtype']);
     expect(scopes).toHaveLength(2);
@@ -78,7 +78,7 @@ describe('push registration requests', () => {
     const firstInstallation = new Promise<void>((resolve) => {
       releaseFirst = resolve;
     });
-    vi.mocked(requestWithRetry).mockImplementation(async (options: any) => {
+    vi.mocked(requestWithRetry).mockImplementation(async (_operation, options: any) => {
       if (options.url.includes('/first/installations')) await firstInstallation;
       if (options.url.endsWith('/installations')) {
         return JSON.stringify({ authToken: { token: options.url.includes('/first/') ? 'first-auth' : 'second-auth' } });
@@ -98,7 +98,7 @@ describe('push registration requests', () => {
 
     const registrations = vi
       .mocked(requestWithRetry)
-      .mock.calls.map(([options]) => options as any)
+      .mock.calls.map(([, options]) => options as any)
       .filter((options) => options.url.endsWith('/registrations'));
     for (const project of ['first', 'second']) {
       const request = registrations.find((options) => options.url.includes(`/${project}/`));

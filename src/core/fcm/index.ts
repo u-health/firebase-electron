@@ -55,7 +55,7 @@ async function registerRequest(
   gcmToken: string,
   keys: { authSecret: string; publicKey: string },
 ): Promise<string> {
-  const response = await requestWithRetry({
+  const response = await requestWithRetry('fcm.register', {
     url: `${FCM_REGISTRATION_ENDPOINT}/projects/${credentials.projectId}/registrations`,
     method: 'POST',
     headers: {
@@ -88,7 +88,7 @@ async function registerRequest(
 async function installRequest(credentials: FirebaseCredentials): Promise<string> {
   const fid = await generateFirebaseFID();
 
-  const response = await requestWithRetry({
+  const response = await requestWithRetry('firebase.install', {
     url: `${FCM_INSTALLATION_ENDPOINT}/projects/${credentials.projectId}/installations`,
     method: 'POST',
     headers: {

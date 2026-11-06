@@ -39,7 +39,7 @@ export async function checkIn(androidId?: string, securityToken?: string): Promi
 
   const buffer = getCheckinRequest(androidId, securityToken);
 
-  const body = await requestWithRetry({
+  const body = await requestWithRetry('gcm.check_in', {
     url: CHECKIN_URL,
     method: 'POST',
     headers: {
@@ -91,7 +91,7 @@ interface PostRegisterOptions {
 }
 
 async function postRegister({ androidId, securityToken, body, retry = 0 }: PostRegisterOptions): Promise<string> {
-  const response = await requestWithRetry({
+  const response = await requestWithRetry('gcm.register', {
     url: REGISTER_URL,
     method: 'POST',
     headers: {
